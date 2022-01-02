@@ -18,7 +18,7 @@ contract INDEXSale is Ownable {
     uint256 public publicSalePrice = (75 * MIMdecimals) / (INDEXdecimals * 10);
 
     uint256 public constant MAX_PRIVATE_SALE_PER_ACCOUNT = 200 * INDEXdecimals;
-    uint256 public constant MAX_PUBLIC_SALE_PER_ACCOUNT = 67 * INDEXdecimals; // 502.5
+    uint256 public constant MAX_PUBLIC_SALE_PER_ACCOUNT = 6667 * (INDEXdecimals/100); 
 
     mapping(address => bool) public approvedBuyers;
     mapping(address => uint256) public invested;
@@ -49,22 +49,23 @@ contract INDEXSale is Ownable {
 
     function _approveBuyer(address newBuyer_)
         internal
-        onlyOwner
         returns (bool)
     {
+        require(msg.sender == dev, "!dev");
         approvedBuyers[newBuyer_] = true;
         return approvedBuyers[newBuyer_];
     }
 
-    function approveBuyer(address newBuyer_) external onlyOwner returns (bool) {
+    function approveBuyer(address newBuyer_) external returns (bool) {
+        require(msg.sender == dev, "!dev");
         return _approveBuyer(newBuyer_);
     }
 
     function approveBuyers(address[] calldata newBuyers_)
         external
-        onlyOwner
         returns (uint256)
     {
+        require(msg.sender == dev, "!dev");
         for (
             uint256 iteration_ = 0;
             newBuyers_.length > iteration_;
@@ -150,16 +151,18 @@ contract INDEXSale is Ownable {
         publicSalePrice = (_price * MIMdecimals) / (INDEXdecimals * 10);
     }
 
-    function withdraw(address _token) public {
-        require(msg.sender == dev, "!dev");
+    function withdraw(address _token, address receiverAddress) external onlyOwner  {
         require(INDEX != address(0), "INDEX address not set");
         uint256 b = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).transfer(dev, b);
+        IERC20(_token).transfer(receiverAddress, b);
     }
 
     function isClaimable() public returns (bool) {
-        if (claimable) {
+        if (claimable == true) {
             return true;
+        }
+        if (INDEX == address(0)){
+            return false;
         }
         if (claimableTimestamp + 3 * 3600 <= block.timestamp) {
             claimable = true;
@@ -168,3 +171,4 @@ contract INDEXSale is Ownable {
         return false;
     }
 }
+
